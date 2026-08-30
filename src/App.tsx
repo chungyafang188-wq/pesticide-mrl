@@ -9,13 +9,12 @@ import {
   searchCommonUse,
   searchRecords,
 } from "./lib/search";
+import { amendmentText } from "./lib/amendment";
 import { About } from "./pages/About";
 import { Home } from "./pages/Home";
 import type { DataOrigin, MrlDataset, MrlRecord, QueryMode, UseTypeFilter } from "./types";
 
 type Page = "home" | "about";
-
-const FALLBACK_AMENDMENT = "中華民國115年04月21日衛授食字第1151300817號令修正";
 
 function formatDate(iso: string) {
   try {
@@ -43,7 +42,7 @@ function App() {
   const [selected, setSelected] = useState<MrlRecord | null>(null);
   const [pdfBusy, setPdfBusy] = useState(false);
   const [pdfError, setPdfError] = useState("");
-  const [amendment, setAmendment] = useState(FALLBACK_AMENDMENT);
+  const [amendment, setAmendment] = useState(amendmentText());
 
   useEffect(() => {
     let cancelled = false;
@@ -68,14 +67,20 @@ function App() {
     loadDataset()
       .then((result) => {
         if (cancelled) return;
-        setData(result.data);
+        const notice = amendmentText(result.data.amendmentNotice || amendment);
+        setData({ ...result.data, amendmentNotice: notice });
+        setAmendment(notice);
         setOrigin(result.origin);
         setStatus("ready");
         if (result.origin === "cache" && navigator.onLine) {
           void refreshDataset()
             .then((fresh) => {
               if (cancelled) return;
-              setData(fresh.data);
+              setData({
+                ...fresh.data,
+                amendmentNotice: amendmentText(fresh.data.amendmentNotice),
+              });
+              setAmendment(amendmentText(fresh.data.amendmentNotice));
               setOrigin(fresh.origin);
             })
             .catch(() => {
@@ -179,18 +184,22 @@ function App() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
+  useEffect(() => {
+    document.getElementById("law-amendment")?.setAttribute("hidden", "");
+  }, []);
+
   return (
     <div className="app">
       <header className="top">
-        <div className="top-main">
+        <div className="brand-row">
           <p className="eyebrow">台灣 · 衛福部食藥署</p>
-          <h1>農藥殘留容許量</h1>
+          <p className="amendment">{amendmentText(data?.amendmentNotice || amendment)}</p>
         </div>
-        <p className="amendment">{data?.amendmentNotice || amendment}</p>
+        <h1>農藥殘留容許量</h1>
       </header>
 
       {page === "about" ? (
-        <About data={data} />
+        <About data={data} amendment={amendmentText(data?.amendmentNotice || amendment)} />
       ) : (
         <Home
           status={status}

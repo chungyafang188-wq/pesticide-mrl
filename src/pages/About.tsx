@@ -12,7 +12,13 @@ function formatDate(iso: string) {
   }
 }
 
-export function About({ data }: { data: MrlDataset | null }) {
+export function About({
+  data,
+  amendment,
+}: {
+  data: MrlDataset | null;
+  amendment: string;
+}) {
   return (
     <main className="about">
       <h2>這是什麼</h2>
@@ -49,7 +55,7 @@ export function About({ data }: { data: MrlDataset | null }) {
           <h2>目前資料</h2>
           <p>{data.sourceNote}</p>
           <ul>
-            <li>法規修正：{data.amendmentNotice || "（尚未讀取沿革）"}</li>
+            <li>法規修正：{amendment}</li>
             <li>匯入時間：{formatDate(data.fetchedAt)}</li>
             <li>筆數：{data.count.toLocaleString()}</li>
           </ul>
