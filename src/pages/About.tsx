@@ -17,7 +17,15 @@ export function About({ data }: { data: MrlDataset | null }) {
     <main className="about">
       <h2>這是什麼</h2>
       <p>
-        手機／電腦上的查詢 App：依藥劑、依作物，或交叉查出台灣《農藥殘留容許量標準》附表一的容許量（ppm）。
+        手機／電腦上的查詢 App：依藥劑、依作物、交叉查，或查兩種作物共用藥。共用藥可只填兩個品項，或再填一支藥劑看該藥對兩者的容許量。未列者原則上不得檢出；這不是農藥標示使用範圍。
+      </p>
+      <h2>手機怎麼開</h2>
+      <p>
+        請用公開網址（電腦關機也可）：{" "}
+        <a href="https://chungyafang188-wq.github.io/pesticide-mrl/">
+          https://chungyafang188-wq.github.io/pesticide-mrl/
+        </a>
+        。不要開本機的 127.0.0.1 或區網 IP。
       </p>
       <h2>加到主畫面</h2>
       <p>

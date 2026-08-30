@@ -4,10 +4,16 @@ import { parseDriveFileId } from "./lib/drive";
 import { downloadResultsPdf } from "./lib/exportPdf";
 import { loadRecent, pushRecent, removeRecent } from "./lib/recent";
 import { loadDriveSettings } from "./lib/settings";
-import { countMatches, createSearcher, searchRecords } from "./lib/search";
+import {
+  countCommonUse,
+  countMatches,
+  createSearcher,
+  searchCommonUse,
+  searchRecords,
+} from "./lib/search";
 import { About } from "./pages/About";
 import { Home } from "./pages/Home";
-import type { DataOrigin, MrlDataset, MrlRecord, QueryMode } from "./types";
+import type { DataOrigin, MrlDataset, MrlRecord, QueryMode, UseTypeFilter } from "./types";
 
 type Page = "home" | "about";
 
@@ -31,6 +37,8 @@ function App() {
   const [queryMode, setQueryMode] = useState<QueryMode>("both");
   const [pesticide, setPesticide] = useState("");
   const [crop, setCrop] = useState("");
+  const [crop2, setCrop2] = useState("");
+  const [useType, setUseType] = useState<UseTypeFilter>("all");
   const [recent, setRecent] = useState<string[]>(() => loadRecent());
   const [selected, setSelected] = useState<MrlRecord | null>(null);
   const [pdfBusy, setPdfBusy] = useState(false);
@@ -72,23 +80,33 @@ function App() {
     return createSearcher(data.records);
   }, [data]);
 
+  const isCommon = queryMode === "common";
   const activePesticide = queryMode === "crop" ? "" : pesticide;
-  const activeCrop = queryMode === "pesticide" ? "" : crop;
+  const activeCrop = queryMode === "pesticide" || isCommon ? "" : crop;
+
+  const activeUseType = queryMode === "crop" ? useType : "all";
 
   const results = useMemo(() => {
-    if (!data) return [];
-    return searchRecords(data.records, fuse, activePesticide, activeCrop);
-  }, [data, fuse, activePesticide, activeCrop]);
+    if (!data || isCommon) return [];
+    return searchRecords(data.records, fuse, activePesticide, activeCrop, 80, activeUseType);
+  }, [data, fuse, isCommon, activePesticide, activeCrop, activeUseType]);
+
+  const commonHits = useMemo(() => {
+    if (!data || !isCommon) return [];
+    return searchCommonUse(data.records, fuse, pesticide, crop, crop2);
+  }, [data, fuse, isCommon, pesticide, crop, crop2]);
 
   const matchCount = useMemo(() => {
     if (!data) return 0;
-    return countMatches(data.records, fuse, activePesticide, activeCrop);
-  }, [data, fuse, activePesticide, activeCrop]);
+    if (isCommon) return countCommonUse(data.records, fuse, pesticide, crop, crop2);
+    return countMatches(data.records, fuse, activePesticide, activeCrop, activeUseType);
+  }, [data, fuse, isCommon, pesticide, activePesticide, activeCrop, activeUseType, crop, crop2]);
 
   const showEmptyHint =
     status === "ready" &&
-    Boolean(activePesticide.trim() || activeCrop.trim()) &&
-    results.length === 0;
+    (isCommon
+      ? Boolean(crop.trim() && crop2.trim()) && commonHits.length === 0
+      : Boolean(activePesticide.trim() || activeCrop.trim()) && results.length === 0);
 
   function remember(value: string) {
     const next = value.trim();
@@ -101,23 +119,30 @@ function App() {
       item.endsWith("類") ||
       item.includes("香辛") ||
       item.includes("植物");
-    if (isCrop) setCrop(item);
-    else setPesticide(item);
+    if (isCrop) {
+      if (queryMode === "common" && crop.trim()) setCrop2(item);
+      else setCrop(item);
+    } else setPesticide(item);
     setRecent(pushRecent(item));
   }
 
   async function exportPdf() {
-    if (!data || !results.length) return;
+    const hasRows = isCommon ? commonHits.length > 0 : results.length > 0;
+    if (!data || !hasRows) return;
     setPdfBusy(true);
     setPdfError("");
     try {
-      const all = searchRecords(data.records, fuse, activePesticide, activeCrop, 400);
+      const all = isCommon
+        ? searchCommonUse(data.records, fuse, pesticide, crop, crop2, 400).flatMap((hit) =>
+            [hit.rowA, hit.rowB].filter((row): row is NonNullable<typeof row> => Boolean(row)),
+          )
+        : searchRecords(data.records, fuse, activePesticide, activeCrop, 400, activeUseType);
       downloadResultsPdf({
         dataset: data,
-        pesticide: activePesticide,
-        crop: activeCrop,
+        pesticide: isCommon ? pesticide.trim() || "兩作物共用藥" : activePesticide,
+        crop: isCommon ? `${crop.trim()}、${crop2.trim()}` : activeCrop,
         rows: all,
-        total: matchCount,
+        total: isCommon ? all.length : matchCount,
       });
     } catch (err) {
       setPdfError(err instanceof Error ? err.message : "PDF 匯出失敗");
@@ -129,6 +154,8 @@ function App() {
   function clearQuery() {
     setPesticide("");
     setCrop("");
+    setCrop2("");
+    setUseType("all");
     setSelected(null);
     setPdfError("");
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -152,15 +179,23 @@ function App() {
           queryMode={queryMode}
           pesticide={pesticide}
           crop={crop}
+          crop2={crop2}
+          useType={useType}
           recent={recent}
           results={results}
+          commonHits={commonHits}
           matchCount={matchCount}
           showEmptyHint={showEmptyHint}
           pdfBusy={pdfBusy}
           pdfError={pdfError}
-          onQueryModeChange={setQueryMode}
+          onQueryModeChange={(mode) => {
+            setQueryMode(mode);
+            if (mode !== "crop") setUseType("all");
+          }}
           onPesticideChange={setPesticide}
           onCropChange={setCrop}
+          onCrop2Change={setCrop2}
+          onUseTypeChange={setUseType}
           onRemember={remember}
           onRecent={applyRecent}
           onRemoveRecent={(item) => setRecent(removeRecent(item))}

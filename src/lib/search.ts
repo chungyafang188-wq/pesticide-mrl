@@ -1,6 +1,6 @@
 import Fuse from "fuse.js";
 import { CROP_PARENT_GROUPS } from "./categories";
-import type { MrlRecord } from "../types";
+import type { CommonUseHit, MrlRecord, UseTypeFilter } from "../types";
 
 function contains(hay: string, needle: string) {
   return hay.toLowerCase().includes(needle.toLowerCase());
@@ -57,11 +57,11 @@ function cropExcludesQuery(crop: string, q: string): boolean {
   return exclusionItems(crop).some((item) => item === q);
 }
 
-function isCategoryQuery(q: string): boolean {
+export function isCategoryQuery(q: string): boolean {
   return q.endsWith("類") || q.startsWith("香辛植物") || q === "草木本植物" || q === "未分類";
 }
 
-function parentGroupsFor(records: MrlRecord[], q: string): string[] {
+export function parentGroupsFor(records: MrlRecord[], q: string): string[] {
   const groups = new Set<string>(CROP_PARENT_GROUPS[q] ?? []);
   for (const r of records) {
     if (!cropExcludesQuery(r.crop, q)) continue;
@@ -76,6 +76,7 @@ function cropAppliesToQuery(crop: string, q: string, groups: string[]): boolean 
   if (crop === q) return true;
 
   const primary = cropPrimaryName(crop);
+  if (primary === q) return true;
   if (isCategoryQuery(q)) {
     return primary === q || primary.includes(q);
   }
@@ -90,19 +91,48 @@ function matchCrop(records: MrlRecord[], crop: string) {
   return records.filter((r) => cropAppliesToQuery(r.crop, q, groups));
 }
 
+export function isSpecificCropName(name: string): boolean {
+  const n = name.trim();
+  if (!n) return false;
+  if (n.includes("除外") || n.startsWith("其他")) return false;
+  if (isCategoryQuery(n) || n === "其他") return false;
+  return true;
+}
+
+export function listDetailCrops(records: MrlRecord[], category = ""): string[] {
+  const names = [...new Set(records.map((r) => r.crop))].filter(isSpecificCropName);
+  const cat = category.trim();
+  const list =
+    cat && isCategoryQuery(cat)
+      ? names.filter((n) => parentGroupsFor(records, n).includes(cat))
+      : names;
+  return list.sort((a, b) => a.localeCompare(b, "zh-Hant"));
+}
+
+export function matchesUseType(row: MrlRecord, filter: UseTypeFilter) {
+  if (filter === "all") return true;
+  const note = row.note;
+  if (filter === "insect") {
+    return note.includes("殺蟲") || note.includes("殺蟎") || note.includes("殺線蟲");
+  }
+  if (filter === "fungicide") return note.includes("殺菌");
+  return note.includes("殺草") || note.includes("除草");
+}
+
 export function searchRecords(
   records: MrlRecord[],
   fuse: Fuse<MrlRecord> | null,
   pesticide: string,
   crop: string,
   limit = 80,
+  useType: UseTypeFilter = "all",
 ): MrlRecord[] {
   const p = pesticide.trim();
   const c = crop.trim();
   if (!p && !c) return [];
 
   const byPesticide = matchPesticide(records, fuse, p);
-  const list = matchCrop(byPesticide, c);
+  const list = matchCrop(byPesticide, c).filter((row) => matchesUseType(row, useType));
   return list.slice(0, limit);
 }
 
@@ -111,9 +141,95 @@ export function countMatches(
   fuse: Fuse<MrlRecord> | null,
   pesticide: string,
   crop: string,
+  useType: UseTypeFilter = "all",
 ) {
   const p = pesticide.trim();
   const c = crop.trim();
   if (!p && !c) return 0;
-  return matchCrop(matchPesticide(records, fuse, p), c).length;
+  return matchCrop(matchPesticide(records, fuse, p), c).filter((row) =>
+    matchesUseType(row, useType),
+  ).length;
+}
+
+function pesticideKey(row: MrlRecord) {
+  return `${row.nameZh.trim()}|${row.nameEn.trim().toLowerCase()}`;
+}
+
+function bestRowForCrop(rows: MrlRecord[], q: string): MrlRecord {
+  const ranked = [...rows].sort((a, b) => {
+    const score = (r: MrlRecord) => {
+      if (r.crop === q) return 0;
+      if (cropPrimaryName(r.crop) === q) return 1;
+      if (r.crop.includes(q)) return 2;
+      return 3;
+    };
+    return score(a) - score(b);
+  });
+  return ranked[0];
+}
+
+function groupByPesticide(rows: MrlRecord[]) {
+  const map = new Map<string, MrlRecord[]>();
+  for (const row of rows) {
+    const key = pesticideKey(row);
+    const list = map.get(key);
+    if (list) list.push(row);
+    else map.set(key, [row]);
+  }
+  return map;
+}
+
+export function searchCommonUse(
+  records: MrlRecord[],
+  fuse: Fuse<MrlRecord> | null,
+  pesticide: string,
+  cropA: string,
+  cropB: string,
+  limit = 80,
+): CommonUseHit[] {
+  const a = cropA.trim();
+  const b = cropB.trim();
+  const p = pesticide.trim();
+  if (!a || !b) return [];
+
+  const pool = p ? matchPesticide(records, fuse, p) : records;
+  if (p && pool.length === 0) return [];
+
+  const mapA = groupByPesticide(matchCrop(pool, a));
+  const mapB = groupByPesticide(matchCrop(pool, b));
+  const poolMap = groupByPesticide(pool);
+
+  const keys = (
+    p ? [...poolMap.keys()] : [...mapA.keys()].filter((key) => mapB.has(key))
+  ).sort((x, y) => {
+    const left = poolMap.get(x)![0];
+    const right = poolMap.get(y)![0];
+    return (left.nameZh || left.nameEn).localeCompare(right.nameZh || right.nameEn, "zh-Hant");
+  });
+
+  return keys
+    .map((key) => {
+      const sample = poolMap.get(key)![0];
+      const rowsA = mapA.get(key);
+      const rowsB = mapB.get(key);
+      return {
+        key,
+        nameZh: sample.nameZh,
+        nameEn: sample.nameEn,
+        rowA: rowsA ? bestRowForCrop(rowsA, a) : null,
+        rowB: rowsB ? bestRowForCrop(rowsB, b) : null,
+      };
+    })
+    .filter((hit) => (p ? Boolean(hit.rowA || hit.rowB) : Boolean(hit.rowA && hit.rowB)))
+    .slice(0, limit);
+}
+
+export function countCommonUse(
+  records: MrlRecord[],
+  fuse: Fuse<MrlRecord> | null,
+  pesticide: string,
+  cropA: string,
+  cropB: string,
+) {
+  return searchCommonUse(records, fuse, pesticide, cropA, cropB, Number.MAX_SAFE_INTEGER).length;
 }

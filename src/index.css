@@ -51,7 +51,7 @@ h1 {
 
 .segment {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-columns: 1fr 1fr;
   gap: 0.35rem;
   margin: 0.85rem 0 0;
   padding: 0.3rem;
@@ -66,8 +66,63 @@ h1 {
   background: transparent;
   color: var(--ink);
   border-radius: 0.7rem;
-  padding: 0.55rem 0.35rem;
+  padding: 0.5rem 0.3rem;
   cursor: pointer;
+}
+
+.fill-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: center;
+  margin: 0.55rem 0 0.25rem;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.slot-heading {
+  margin: 0.7rem 0 0.2rem;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+.common-pair {
+  display: grid;
+  gap: 0.35rem;
+  margin-top: 0.4rem;
+}
+
+.pair-btn.missing {
+  cursor: default;
+  border-style: dashed;
+  opacity: 0.92;
+}
+
+.missing-ppm {
+  color: var(--warn);
+}
+
+.pair-btn {
+  font: inherit;
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  text-align: left;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  border-radius: 0.65rem;
+  padding: 0.45rem 0.6rem;
+  cursor: pointer;
+  color: var(--ink);
+}
+
+.listed-as {
+  display: block;
+  font-weight: 400;
+  color: var(--muted);
+  font-size: 0.78rem;
 }
 
 .seg.on {
@@ -121,6 +176,10 @@ h1 {
   background: var(--green);
   border-color: var(--green);
   color: #fff;
+}
+
+.result-filters {
+  margin: 0.35rem 0 0.7rem;
 }
 
 .disclaimer,
@@ -223,7 +282,8 @@ h1 {
   cursor: pointer;
 }
 
-input[type="search"] {
+input[type="search"],
+select {
   font: inherit;
   padding: 0.75rem 0.85rem;
   border-radius: 0.75rem;
