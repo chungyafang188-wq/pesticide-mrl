@@ -1,9 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { loadDataset, refreshDataset } from "./lib/db";
-import { parseDriveFileId } from "./lib/drive";
 import { downloadResultsPdf } from "./lib/exportPdf";
 import { loadRecent, pushRecent, removeRecent } from "./lib/recent";
-import { loadDriveSettings } from "./lib/settings";
 import {
   countCommonUse,
   countMatches,
@@ -52,8 +50,7 @@ function App() {
         setData(result.data);
         setOrigin(result.origin);
         setStatus("ready");
-        const settings = loadDriveSettings();
-        if (result.origin === "cache" && parseDriveFileId(settings.shareUrl) && navigator.onLine) {
+        if (result.origin === "cache" && navigator.onLine) {
           void refreshDataset()
             .then((fresh) => {
               if (cancelled) return;
@@ -61,7 +58,7 @@ function App() {
               setOrigin(fresh.origin);
             })
             .catch(() => {
-              /* 離線或雲端失敗時沿用快取 */
+              /* 離線或網站暫時失敗時沿用快取 */
             });
         }
       })

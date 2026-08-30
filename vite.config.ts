@@ -17,7 +17,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: "autoUpdate",
-      includeAssets: ["favicon.svg", "apple-touch-icon.svg", "data/mrl.json"],
+      includeAssets: ["favicon.svg", "apple-touch-icon.svg"],
       manifest: {
         name: "農藥殘留容許量查詢",
         short_name: "農藥容許量",
@@ -44,9 +44,23 @@ export default defineConfig({
         ],
       },
       workbox: {
-        globPatterns: ["**/*.{js,css,html,svg,json,ico,woff2}"],
+        globPatterns: ["**/*.{js,css,html,svg,ico,woff2}"],
         navigateFallback: "index.html",
         maximumFileSizeToCacheInBytes: 8 * 1024 * 1024,
+        runtimeCaching: [
+          {
+            urlPattern: /data\/mrl\.json$/i,
+            handler: "NetworkFirst",
+            options: {
+              cacheName: "mrl-data",
+              networkTimeoutSeconds: 8,
+              expiration: {
+                maxEntries: 1,
+                maxAgeSeconds: 60 * 60 * 24 * 40,
+              },
+            },
+          },
+        ],
       },
     }),
   ],

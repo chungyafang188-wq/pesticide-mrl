@@ -51,7 +51,7 @@ async function main() {
     raw = await res.json();
   } catch (err) {
     const existing = await loadExisting();
-    if (existing) {
+    if (existing && process.env.INGEST_REQUIRE_FRESH !== "1") {
       console.warn("無法下載開放資料，沿用既有 public/data/mrl.json");
       console.warn(String(err));
       return;

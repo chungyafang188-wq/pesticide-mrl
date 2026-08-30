@@ -22,6 +22,8 @@ https://chungyafang188-wq.github.io/pesticide-mrl/
 
 中國大陸有時打不開 GitHub。第一次用外地網路打開後，可加到主畫面離線查。
 
+網站每月 1 日會自動抓食藥署開放資料並重新發佈。手機連網再開一次才會換成新表。
+
 ## 加到主畫面
 
 - iPhone：Safari → 分享 → 加入主畫面

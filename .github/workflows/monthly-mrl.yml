@@ -1,0 +1,39 @@
+name: Monthly MRL update
+
+on:
+  schedule:
+    # 台灣時間每月 1 日中午 12:00（UTC 04:00）
+    - cron: "0 4 1 * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: monthly-mrl
+  cancel-in-progress: true
+
+jobs:
+  ingest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run ingest
+        env:
+          INGEST_REQUIRE_FRESH: "1"
+      - name: Commit updated dataset
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/data/mrl.json
+          if git diff --cached --quiet; then
+            echo "No data change"
+            exit 0
+          fi
+          git commit -m "Update bundled MRL data from FDA open data."
+          git push
