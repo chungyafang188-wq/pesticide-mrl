@@ -118,6 +118,11 @@ async function main() {
   };
 
   await writeFile(outPath, JSON.stringify(payload), "utf8");
+  await writeFile(
+    join(dirname(outPath), "amendment.json"),
+    JSON.stringify({ notice: amendmentNotice }),
+    "utf8",
+  );
   console.log(`Wrote ${records.length} records to ${outPath}`);
 }
 

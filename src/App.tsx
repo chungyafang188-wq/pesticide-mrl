@@ -15,6 +15,8 @@ import type { DataOrigin, MrlDataset, MrlRecord, QueryMode, UseTypeFilter } from
 
 type Page = "home" | "about";
 
+const FALLBACK_AMENDMENT = "中華民國115年04月21日衛授食字第1151300817號令修正";
+
 function formatDate(iso: string) {
   try {
     return new Date(iso).toLocaleString("zh-Hant-TW", {
@@ -41,6 +43,25 @@ function App() {
   const [selected, setSelected] = useState<MrlRecord | null>(null);
   const [pdfBusy, setPdfBusy] = useState(false);
   const [pdfError, setPdfError] = useState("");
+  const [amendment, setAmendment] = useState(FALLBACK_AMENDMENT);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch(`${import.meta.env.BASE_URL}data/amendment.json`)
+      .then((res) => {
+        if (!res.ok) throw new Error(String(res.status));
+        return res.json() as Promise<{ notice?: string }>;
+      })
+      .then((payload) => {
+        if (!cancelled && payload.notice) setAmendment(payload.notice);
+      })
+      .catch(() => {
+        /* 沿用畫面上的後備文字 */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -165,9 +186,7 @@ function App() {
           <p className="eyebrow">台灣 · 衛福部食藥署</p>
           <h1>農藥殘留容許量</h1>
         </div>
-        {data?.amendmentNotice ? (
-          <p className="amendment">{data.amendmentNotice}</p>
-        ) : null}
+        <p className="amendment">{data?.amendmentNotice || amendment}</p>
       </header>
 
       {page === "about" ? (

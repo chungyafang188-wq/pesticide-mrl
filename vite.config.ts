@@ -44,10 +44,34 @@ export default defineConfig({
         ],
       },
       workbox: {
-        globPatterns: ["**/*.{js,css,html,svg,ico,woff2}"],
+        cacheId: "pesticide-mrl-v2",
+        globPatterns: ["**/*.{js,css,svg,ico,woff2}"],
         navigateFallback: "index.html",
+        cleanupOutdatedCaches: true,
+        skipWaiting: true,
+        clientsClaim: true,
         maximumFileSizeToCacheInBytes: 8 * 1024 * 1024,
         runtimeCaching: [
+          {
+            urlPattern: ({ request }) => request.mode === "navigate",
+            handler: "NetworkFirst",
+            options: {
+              cacheName: "pages",
+              networkTimeoutSeconds: 3,
+            },
+          },
+          {
+            urlPattern: /data\/amendment\.json$/i,
+            handler: "NetworkFirst",
+            options: {
+              cacheName: "mrl-amendment",
+              networkTimeoutSeconds: 5,
+              expiration: {
+                maxEntries: 1,
+                maxAgeSeconds: 60 * 60 * 24 * 40,
+              },
+            },
+          },
           {
             urlPattern: /data\/mrl\.json$/i,
             handler: "NetworkFirst",
