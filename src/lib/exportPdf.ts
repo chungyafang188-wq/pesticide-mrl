@@ -44,6 +44,7 @@ export function downloadResultsPdf(opts: {
   <p style="font-size:13px;margin:0 0 4px;letter-spacing:0.04em;">法規來源</p>
   <h1>衛生福利部《農藥殘留容許量標準》附表一</h1>
   <p>農藥殘留容許量查詢結果　藥劑：${escapeHtml(opts.pesticide.trim() || "（未指定）")}　作物類別：${escapeHtml(opts.crop.trim() || "（未指定）")}</p>
+  <p>法規修正：${escapeHtml(opts.dataset.amendmentNotice || "（未載入）")}</p>
   <p>資料匯入：${escapeHtml(opts.dataset.fetchedAt)}　本表 ${rows.length} 筆${truncated ? `（符合 ${opts.total} 筆，僅匯出前 ${MAX_ROWS} 筆）` : ""}</p>
   <p>非正式法規文本。以衛福部食藥署最新公告為準。台灣採正面表列，未列之農藥原則上不得檢出。</p>
   <table>

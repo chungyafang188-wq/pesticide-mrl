@@ -4,6 +4,8 @@ const SOURCE_URL = "https://data.fda.gov.tw/data/opendata/export/13/json";
 const SOURCE_PAGE = "https://data.gov.tw/dataset/8944";
 const OFFICIAL_LOOKUP =
   "https://consumer.fda.gov.tw/Law/PesticideList.aspx?nodeID=520";
+const AMENDMENT_SOURCE =
+  "https://law.moj.gov.tw/LawClass/LawHistory.aspx?pcode=L0040083";
 
 function parsePpm(raw: unknown): number | null {
   const text = String(raw ?? "").trim();
@@ -46,6 +48,8 @@ export function parseDataset(raw: unknown): MrlDataset {
       sourceNote:
         data.sourceNote ||
         "衛福部食藥署《農藥殘留容許量標準》附表一。非正式法規文本。",
+      amendmentNotice: data.amendmentNotice || "",
+      amendmentSource: data.amendmentSource || AMENDMENT_SOURCE,
       count: records.length,
       crops:
         data.crops?.length > 0
@@ -71,6 +75,8 @@ export function parseDataset(raw: unknown): MrlDataset {
     officialLookup: OFFICIAL_LOOKUP,
     sourceNote:
       "衛福部食藥署《農藥殘留容許量標準》附表一開放資料。由雲端硬碟載入。非正式法規文本。",
+    amendmentNotice: "",
+    amendmentSource: AMENDMENT_SOURCE,
     count: records.length,
     crops: [...new Set(records.map((r) => r.crop).filter(Boolean))].sort((a, b) =>
       a.localeCompare(b, "zh-Hant"),

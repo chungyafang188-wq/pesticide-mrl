@@ -33,7 +33,7 @@ export function About({ data }: { data: MrlDataset | null }) {
       </p>
       <h2>資料更新</h2>
       <p>
-        GitHub 每月自動抓一次食藥署開放資料並更新網站。手機有網路再開一次，才會換成新表；離線仍用上次已下載的快取。非正式法規文本。
+        GitHub 每月自動抓一次食藥署開放資料，並核對全國法規資料庫沿革上的最新修正令。手機有網路再開一次，才會換成新表；離線仍用上次已下載的快取。非正式法規文本。
       </p>
       <h2>正面表列</h2>
       <p>表上未列之農藥，原則上不得檢出。非正式法規文本，以食藥署最新公告為準。</p>
@@ -49,6 +49,7 @@ export function About({ data }: { data: MrlDataset | null }) {
           <h2>目前資料</h2>
           <p>{data.sourceNote}</p>
           <ul>
+            <li>法規修正：{data.amendmentNotice || "（尚未讀取沿革）"}</li>
             <li>匯入時間：{formatDate(data.fetchedAt)}</li>
             <li>筆數：{data.count.toLocaleString()}</li>
           </ul>

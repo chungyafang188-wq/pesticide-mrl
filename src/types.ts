@@ -29,6 +29,8 @@ export type MrlDataset = {
   sourcePage: string;
   officialLookup: string;
   sourceNote: string;
+  amendmentNotice: string;
+  amendmentSource: string;
   count: number;
   crops: string[];
   records: MrlRecord[];

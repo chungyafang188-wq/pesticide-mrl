@@ -161,8 +161,13 @@ function App() {
   return (
     <div className="app">
       <header className="top">
-        <p className="eyebrow">台灣 · 衛福部食藥署</p>
-        <h1>農藥殘留容許量</h1>
+        <div className="top-main">
+          <p className="eyebrow">台灣 · 衛福部食藥署</p>
+          <h1>農藥殘留容許量</h1>
+        </div>
+        {data?.amendmentNotice ? (
+          <p className="amendment">{data.amendmentNotice}</p>
+        ) : null}
       </header>
 
       {page === "about" ? (
