@@ -73,7 +73,7 @@ export function parseDataset(raw: unknown): MrlDataset {
     sourcePage: SOURCE_PAGE,
     officialLookup: OFFICIAL_LOOKUP,
     sourceNote:
-      "衛福部食藥署《農藥殘留容許量標準》附表一開放資料。由雲端硬碟載入。非正式法規文本。",
+      "衛福部食藥署《農藥殘留容許量標準》附表一開放資料。非正式法規文本。",
     amendmentNotice: amendmentText(""),
     amendmentSource: AMENDMENT_SOURCE,
     count: records.length,

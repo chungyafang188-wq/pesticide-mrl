@@ -20,6 +20,8 @@ npm run dev
 
 https://chungyafang188-wq.github.io/pesticide-mrl/
 
+若已接到 Render，推上 `main` 後也會自動重建。第一次請在 Render 用 Blueprint 連這個倉庫（根目錄有 `render.yaml`）。
+
 中國大陸有時打不開 GitHub。第一次用外地網路打開後，可加到主畫面離線查。
 
 網站每月 1 日會自動抓食藥署開放資料，並核對全國法規資料庫沿革的最新修正日期與令號。手機連網再開一次才會換成新表。

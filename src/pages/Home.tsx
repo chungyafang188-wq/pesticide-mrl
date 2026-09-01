@@ -14,6 +14,7 @@ const ORIGIN_LABEL: Record<DataOrigin, string> = {
   drive: "已下載",
   bundled: "已下載",
   cache: "離線快取",
+  live: "食藥署最新",
 };
 
 type Props = {
@@ -33,6 +34,8 @@ type Props = {
   showEmptyHint: boolean;
   pdfBusy: boolean;
   pdfError: string;
+  refreshBusy: boolean;
+  refreshMessage: string;
   onQueryModeChange: (mode: QueryMode) => void;
   onPesticideChange: (value: string) => void;
   onCropChange: (value: string) => void;
@@ -43,6 +46,7 @@ type Props = {
   onRemoveRecent: (value: string) => void;
   onSelect: (row: MrlRecord) => void;
   onExportPdf: () => void;
+  onRefresh: () => void;
   onClear: () => void;
   onOpenAbout: () => void;
   formatDate: (iso: string) => string;
@@ -173,6 +177,8 @@ export function Home({
   showEmptyHint,
   pdfBusy,
   pdfError,
+  refreshBusy,
+  refreshMessage,
   onQueryModeChange,
   onPesticideChange,
   onCropChange,
@@ -183,6 +189,7 @@ export function Home({
   onRemoveRecent,
   onSelect,
   onExportPdf,
+  onRefresh,
   onClear,
   onOpenAbout,
   formatDate,
@@ -209,6 +216,18 @@ export function Home({
   return (
     <main className="home">
       <p className="disclaimer">可依藥劑、作物、交叉或兩作物共用藥查詢。非正式法規文本。</p>
+
+      <div className="refresh-bar">
+        <button
+          type="button"
+          className="refresh-btn"
+          disabled={refreshBusy}
+          onClick={onRefresh}
+        >
+          {refreshBusy ? "更新中…" : "更新法規資料"}
+        </button>
+        {refreshMessage ? <p className="hint">{refreshMessage}</p> : null}
+      </div>
 
       <div className="segment" role="tablist" aria-label="查詢方式">
         <button

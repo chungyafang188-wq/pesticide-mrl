@@ -1,4 +1,4 @@
-export type DataOrigin = "drive" | "bundled" | "cache";
+export type DataOrigin = "drive" | "bundled" | "cache" | "live";
 
 export type QueryMode = "pesticide" | "crop" | "both" | "common";
 

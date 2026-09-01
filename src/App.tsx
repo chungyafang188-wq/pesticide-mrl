@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { loadDataset, refreshDataset } from "./lib/db";
+import { forceRefreshDataset, loadDataset, refreshDataset } from "./lib/db";
 import { downloadResultsPdf } from "./lib/exportPdf";
 import { loadRecent, pushRecent, removeRecent } from "./lib/recent";
 import {
@@ -43,6 +43,8 @@ function App() {
   const [pdfBusy, setPdfBusy] = useState(false);
   const [pdfError, setPdfError] = useState("");
   const [amendment, setAmendment] = useState(amendmentText());
+  const [refreshBusy, setRefreshBusy] = useState(false);
+  const [refreshMessage, setRefreshMessage] = useState("");
 
   useEffect(() => {
     let cancelled = false;
@@ -174,6 +176,35 @@ function App() {
     }
   }
 
+  function applyFresh(result: { data: MrlDataset; origin: DataOrigin }) {
+    const notice = amendmentText(result.data.amendmentNotice);
+    setData({ ...result.data, amendmentNotice: notice });
+    setAmendment(notice);
+    setOrigin(result.origin);
+    setStatus("ready");
+    setError("");
+  }
+
+  async function refreshNow() {
+    if (refreshBusy) return;
+    setRefreshBusy(true);
+    setRefreshMessage("");
+    try {
+      const fresh = await forceRefreshDataset();
+      applyFresh(fresh);
+      const when = formatDate(fresh.data.fetchedAt);
+      setRefreshMessage(
+        fresh.origin === "live"
+          ? `已從食藥署重抓，${fresh.data.count.toLocaleString()} 筆 · ${when}`
+          : `已更新本站資料，${fresh.data.count.toLocaleString()} 筆 · ${when}`,
+      );
+    } catch (err) {
+      setRefreshMessage(err instanceof Error ? err.message : "更新失敗，請連網再試");
+    } finally {
+      setRefreshBusy(false);
+    }
+  }
+
   function clearQuery() {
     setPesticide("");
     setCrop("");
@@ -218,6 +249,8 @@ function App() {
           showEmptyHint={showEmptyHint}
           pdfBusy={pdfBusy}
           pdfError={pdfError}
+          refreshBusy={refreshBusy}
+          refreshMessage={refreshMessage}
           onQueryModeChange={(mode) => {
             setQueryMode(mode);
             if (mode !== "crop") setUseType("all");
@@ -231,6 +264,7 @@ function App() {
           onRemoveRecent={(item) => setRecent(removeRecent(item))}
           onSelect={setSelected}
           onExportPdf={() => void exportPdf()}
+          onRefresh={() => void refreshNow()}
           onClear={clearQuery}
           onOpenAbout={() => setPage("about")}
           formatDate={formatDate}

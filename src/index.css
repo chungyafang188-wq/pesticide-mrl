@@ -206,6 +206,30 @@ h1 {
   font-size: 0.9rem;
 }
 
+.refresh-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.65rem;
+  margin: 0.75rem 0 0;
+}
+
+.refresh-btn {
+  font: inherit;
+  border: 1px solid var(--green);
+  background: var(--card);
+  color: var(--green);
+  border-radius: 999px;
+  padding: 0.45rem 0.9rem;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.refresh-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
 .callout {
   background: #fff4e5;
   margin: 0.75rem 0;

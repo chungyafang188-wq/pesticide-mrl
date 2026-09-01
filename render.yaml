@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: pesticide-mrl
+    runtime: static
+    plan: free
+    region: singapore
+    buildCommand: npm ci && npm run ingest && npx tsc -b && npx vite build
+    staticPublishPath: dist
+    envVars:
+      - key: NODE_VERSION
+        value: "22"

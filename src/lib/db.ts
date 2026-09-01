@@ -36,6 +36,56 @@ async function fetchBundled(): Promise<MrlDataset> {
   return parseDataset(await res.json());
 }
 
+async function fetchJsonNoStore(url: string) {
+  const res = await fetch(url, { cache: "no-store" });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}
+
+async function fetchAmendmentNotice(): Promise<string> {
+  try {
+    const payload = (await fetchJsonNoStore(
+      `${import.meta.env.BASE_URL}data/amendment.json?v=${Date.now()}`,
+    )) as { notice?: string };
+    return payload.notice?.trim() || "";
+  } catch {
+    return "";
+  }
+}
+
+export async function forceRefreshDataset(): Promise<LoadResult> {
+  const stamp = Date.now();
+  let data: MrlDataset | null = null;
+  let origin: DataOrigin = "bundled";
+
+  try {
+    const raw = await fetchJsonNoStore(
+      `https://data.fda.gov.tw/data/opendata/export/13/json?v=${stamp}`,
+    );
+    if (Array.isArray(raw) && raw.length > 0) {
+      data = parseDataset(raw);
+      origin = "live";
+    }
+  } catch {
+    /* 瀏覽器可能被跨網域擋住，改抓本站已發布的表 */
+  }
+
+  if (!data) {
+    const raw = await fetchJsonNoStore(
+      `${import.meta.env.BASE_URL}data/mrl.json?v=${stamp}`,
+    );
+    data = parseDataset(raw);
+    origin = "bundled";
+  }
+
+  const notice = await fetchAmendmentNotice();
+  if (notice) data = { ...data, amendmentNotice: notice };
+  data = { ...data, fetchedAt: new Date().toISOString() };
+
+  await saveDataset(data);
+  return { data, origin };
+}
+
 export async function fetchFromDrive(): Promise<MrlDataset> {
   const settings = loadDriveSettings();
   if (isDriveFolderLink(settings.shareUrl)) {
