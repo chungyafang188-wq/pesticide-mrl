@@ -44,7 +44,7 @@ export default defineConfig({
         ],
       },
       workbox: {
-        cacheId: "pesticide-mrl-v3",
+        cacheId: "pesticide-mrl-v4",
         globPatterns: ["**/*.{js,css,svg,ico,woff2}"],
         navigateFallback: "index.html",
         cleanupOutdatedCaches: true,
