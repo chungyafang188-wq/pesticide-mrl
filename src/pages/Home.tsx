@@ -215,6 +215,7 @@ export function Home({
 
   return (
     <main className="home">
+      <section className="panel">
       <p className="disclaimer">可依藥劑、作物、交叉或兩作物共用藥查詢。非正式法規文本。</p>
 
       <div className="refresh-bar">
@@ -387,12 +388,13 @@ export function Home({
           ))}
         </div>
       )}
+      </section>
 
       {status === "loading" && <p className="status">載入資料中…</p>}
       {status === "error" && <p className="status error">{error}</p>}
 
       {status === "ready" && data && (
-        <>
+        <section className="results-block">
           <div className="meta-row">
             <p className="meta">
               {ORIGIN_LABEL[origin]} · {data.count.toLocaleString()} 筆
@@ -525,7 +527,7 @@ export function Home({
           {searched && (
             <p className="tiny">資料匯入 {formatDate(data.fetchedAt)}</p>
           )}
-        </>
+        </section>
       )}
     </main>
   );

@@ -223,10 +223,12 @@ function App() {
     <div className="app">
       <header className="top">
         <div className="brand-row">
-          <p className="eyebrow">台灣 · 衛福部食藥署</p>
+          <div>
+            <p className="eyebrow">台灣 · 衛福部食藥署</p>
+            <h1>農藥殘留容許量</h1>
+          </div>
           <p className="amendment">{amendmentText(data?.amendmentNotice || amendment)}</p>
         </div>
-        <h1>農藥殘留容許量</h1>
       </header>
 
       {page === "about" ? (

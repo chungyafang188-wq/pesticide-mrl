@@ -20,7 +20,7 @@ export function About({
   amendment: string;
 }) {
   return (
-    <main className="about">
+    <main className="about panel">
       <h2>這是什麼</h2>
       <p>
         手機／電腦上的查詢 App：依藥劑、依作物、交叉查，或查兩種作物共用藥。共用藥可只填兩個品項，或再填一支藥劑看該藥對兩者的容許量。未列者原則上不得檢出；這不是農藥標示使用範圍。
