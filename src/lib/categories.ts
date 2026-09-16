@@ -28,14 +28,26 @@ export const CROP_CHIPS = [
   "其他",
 ];
 
-/** 品名對應官方作物大類，查該品名時可帶入大類列，但「品名除外」的列不適用。 */
+/** 俗稱／常用名 → 附表一作物品名 */
+export const CROP_ALIASES: Record<string, string> = {
+  大白菜: "結球白菜",
+  包心白菜: "結球白菜",
+  黃芽白: "結球白菜",
+};
+
+const BRASSICA_HEADING = ["包葉菜類", "十字花科包葉菜類"];
+
+/** 品名對應官方作物大類，查該品名時可帶入大類列，但「品名除外」或「所屬大類除外」的列不適用。 */
 export const CROP_PARENT_GROUPS: Record<string, string[]> = {
   結球萵苣: ["包葉菜類"],
-  結球白菜: ["包葉菜類"],
-  甘藍: ["包葉菜類"],
-  抱子甘藍: ["包葉菜類"],
-  花椰菜: ["包葉菜類"],
-  青花菜: ["包葉菜類"],
+  結球白菜: BRASSICA_HEADING,
+  大白菜: BRASSICA_HEADING,
+  包心白菜: BRASSICA_HEADING,
+  黃芽白: BRASSICA_HEADING,
+  甘藍: BRASSICA_HEADING,
+  抱子甘藍: BRASSICA_HEADING,
+  花椰菜: BRASSICA_HEADING,
+  青花菜: BRASSICA_HEADING,
   不結球萵苣: ["小葉菜類"],
   半結球萵苣: ["小葉菜類"],
   蘋果: ["梨果類"],

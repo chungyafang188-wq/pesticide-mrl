@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { forceRefreshDataset, loadDataset, refreshDataset } from "./lib/db";
 import { downloadResultsPdf } from "./lib/exportPdf";
+import { shareResultsImage } from "./lib/exportShareImage";
 import { loadRecent, pushRecent, removeRecent } from "./lib/recent";
 import {
   countCommonUse,
@@ -12,9 +13,10 @@ import {
 import { amendmentText } from "./lib/amendment";
 import { About } from "./pages/About";
 import { Home } from "./pages/Home";
+import { Reconcile } from "./pages/Reconcile";
 import type { DataOrigin, MrlDataset, MrlRecord, QueryMode, UseTypeFilter } from "./types";
 
-type Page = "home" | "about";
+type Page = "home" | "about" | "reconcile";
 
 function formatDate(iso: string) {
   try {
@@ -42,6 +44,7 @@ function App() {
   const [selected, setSelected] = useState<MrlRecord | null>(null);
   const [pdfBusy, setPdfBusy] = useState(false);
   const [pdfError, setPdfError] = useState("");
+  const [shareBusy, setShareBusy] = useState(false);
   const [amendment, setAmendment] = useState(amendmentText());
   const [refreshBusy, setRefreshBusy] = useState(false);
   const [refreshMessage, setRefreshMessage] = useState("");
@@ -176,6 +179,34 @@ function App() {
     }
   }
 
+  async function shareLineImage() {
+    const hasRows = isCommon ? commonHits.length > 0 : results.length > 0;
+    if (!data || !hasRows) return;
+    setShareBusy(true);
+    setPdfError("");
+    try {
+      const all = isCommon
+        ? searchCommonUse(data.records, fuse, pesticide, crop, crop2, 80).flatMap((hit) =>
+            [hit.rowA, hit.rowB].filter((row): row is NonNullable<typeof row> => Boolean(row)),
+          )
+        : searchRecords(data.records, fuse, activePesticide, activeCrop, 80, activeUseType);
+      const how = await shareResultsImage({
+        dataset: data,
+        pesticide: isCommon ? pesticide.trim() || "兩作物共用藥" : activePesticide,
+        crop: isCommon ? `${crop.trim()}、${crop2.trim()}` : activeCrop,
+        rows: all,
+        total: isCommon ? all.length : matchCount,
+      });
+      if (how === "saved") {
+        setPdfError("已存成圖片。請用 LINE 傳送相簿或檔案。");
+      }
+    } catch (err) {
+      setPdfError(err instanceof Error ? err.message : "分享圖片失敗");
+    } finally {
+      setShareBusy(false);
+    }
+  }
+
   function applyFresh(result: { data: MrlDataset; origin: DataOrigin }) {
     const notice = amendmentText(result.data.amendmentNotice);
     setData({ ...result.data, amendmentNotice: notice });
@@ -219,20 +250,28 @@ function App() {
     document.getElementById("law-amendment")?.setAttribute("hidden", "");
   }, []);
 
+  const onReconcile = page === "reconcile";
+
   return (
-    <div className="app">
+    <div className={onReconcile ? "app wide" : "app"}>
       <header className="top">
         <div className="brand-row">
           <div>
-            <p className="eyebrow">台灣 · 衛福部食藥署</p>
-            <h1>農藥殘留容許量</h1>
+            <p className="eyebrow">{onReconcile ? "內部核對" : "台灣 · 衛福部食藥署"}</p>
+            <h1>{onReconcile ? "單據數量核對" : "農藥殘留容許量"}</h1>
           </div>
-          <p className="amendment">{amendmentText(data?.amendmentNotice || amendment)}</p>
+          {onReconcile ? (
+            <p className="amendment">Excel / CSV · 不上傳</p>
+          ) : (
+            <p className="amendment">{amendmentText(data?.amendmentNotice || amendment)}</p>
+          )}
         </div>
       </header>
 
       {page === "about" ? (
         <About data={data} amendment={amendmentText(data?.amendmentNotice || amendment)} />
+      ) : page === "reconcile" ? (
+        <Reconcile />
       ) : (
         <Home
           status={status}
@@ -251,6 +290,7 @@ function App() {
           showEmptyHint={showEmptyHint}
           pdfBusy={pdfBusy}
           pdfError={pdfError}
+          shareBusy={shareBusy}
           refreshBusy={refreshBusy}
           refreshMessage={refreshMessage}
           onQueryModeChange={(mode) => {
@@ -266,6 +306,7 @@ function App() {
           onRemoveRecent={(item) => setRecent(removeRecent(item))}
           onSelect={setSelected}
           onExportPdf={() => void exportPdf()}
+          onShareLine={() => void shareLineImage()}
           onRefresh={() => void refreshNow()}
           onClear={clearQuery}
           onOpenAbout={() => setPage("about")}
@@ -316,13 +357,20 @@ function App() {
         </dialog>
       )}
 
-      <nav className="tabbar" aria-label="主要選單">
+      <nav className={onReconcile ? "tabbar wide" : "tabbar"} aria-label="主要選單">
         <button
           type="button"
           className={page === "home" ? "tab on" : "tab"}
           onClick={() => setPage("home")}
         >
           查詢
+        </button>
+        <button
+          type="button"
+          className={page === "reconcile" ? "tab on" : "tab"}
+          onClick={() => setPage("reconcile")}
+        >
+          對帳
         </button>
         <button
           type="button"

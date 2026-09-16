@@ -373,6 +373,13 @@ h1 {
   overflow-wrap: anywhere;
 }
 
+.export-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  flex: none;
+}
+
 .pdf-btn {
   font: inherit;
   flex: none;
@@ -384,7 +391,20 @@ h1 {
   cursor: pointer;
 }
 
-.pdf-btn:disabled {
+.share-btn {
+  font: inherit;
+  flex: none;
+  border: 1px solid var(--green);
+  background: #fff;
+  color: var(--green);
+  border-radius: 999px;
+  padding: 0.42rem 0.9rem;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.pdf-btn:disabled,
+.share-btn:disabled {
   opacity: 0.45;
   cursor: not-allowed;
 }
