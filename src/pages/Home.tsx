@@ -34,6 +34,7 @@ type Props = {
   showEmptyHint: boolean;
   pdfBusy: boolean;
   pdfError: string;
+  shareBusy: boolean;
   refreshBusy: boolean;
   refreshMessage: string;
   onQueryModeChange: (mode: QueryMode) => void;
@@ -46,6 +47,7 @@ type Props = {
   onRemoveRecent: (value: string) => void;
   onSelect: (row: MrlRecord) => void;
   onExportPdf: () => void;
+  onShareLine: () => void;
   onRefresh: () => void;
   onClear: () => void;
   onOpenAbout: () => void;
@@ -177,6 +179,7 @@ export function Home({
   showEmptyHint,
   pdfBusy,
   pdfError,
+  shareBusy,
   refreshBusy,
   refreshMessage,
   onQueryModeChange,
@@ -189,6 +192,7 @@ export function Home({
   onRemoveRecent,
   onSelect,
   onExportPdf,
+  onShareLine,
   onRefresh,
   onClear,
   onOpenAbout,
@@ -406,16 +410,28 @@ export function Home({
                   : ` · 符合 ${matchCount.toLocaleString()}`
                 : ""}
             </p>
-            <button
-              type="button"
-              className="pdf-btn"
-              disabled={!listed || pdfBusy}
-              onClick={onExportPdf}
-            >
-              {pdfBusy ? "匯出中…" : "下載 PDF"}
-            </button>
+            <div className="export-actions">
+              <button
+                type="button"
+                className="pdf-btn"
+                disabled={!listed || pdfBusy || shareBusy}
+                onClick={onExportPdf}
+              >
+                {pdfBusy ? "匯出中…" : "下載 PDF"}
+              </button>
+              <button
+                type="button"
+                className="share-btn"
+                disabled={!listed || pdfBusy || shareBusy}
+                onClick={onShareLine}
+              >
+                {shareBusy ? "產生圖片…" : "分享到 LINE"}
+              </button>
+            </div>
           </div>
-          {pdfError && <p className="status error">{pdfError}</p>}
+          {pdfError && (
+            <p className={pdfError.startsWith("已存成") ? "hint" : "status error"}>{pdfError}</p>
+          )}
 
           {queryMode === "crop" && searched && (
             <div className="chips result-filters" role="group" aria-label="藥劑用途">

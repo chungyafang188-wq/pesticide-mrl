@@ -1,9 +1,9 @@
 import Fuse from "fuse.js";
-import { CROP_PARENT_GROUPS } from "./categories";
+import { CROP_ALIASES, CROP_PARENT_GROUPS } from "./categories";
 import type { CommonUseHit, MrlRecord, UseTypeFilter } from "../types";
 
-function contains(hay: string, needle: string) {
-  return hay.toLowerCase().includes(needle.toLowerCase());
+function foldName(value: string) {
+  return value.trim().replace(/\s+/g, " ").toLowerCase();
 }
 
 export function createSearcher(records: MrlRecord[]) {
@@ -19,23 +19,10 @@ export function createSearcher(records: MrlRecord[]) {
   });
 }
 
-function matchPesticide(records: MrlRecord[], fuse: Fuse<MrlRecord> | null, pesticide: string) {
-  const q = pesticide.trim();
+function matchPesticide(records: MrlRecord[], _fuse: Fuse<MrlRecord> | null, pesticide: string) {
+  const q = foldName(pesticide);
   if (!q) return records;
-
-  const exact = records.filter(
-    (r) => contains(r.nameZh, q) || contains(r.nameEn, q),
-  );
-  if (exact.length) {
-    return exact.sort((a, b) => {
-      const aExact = a.nameZh === q || a.nameEn.toLowerCase() === q.toLowerCase() ? 0 : 1;
-      const bExact = b.nameZh === q || b.nameEn.toLowerCase() === q.toLowerCase() ? 0 : 1;
-      return aExact - bExact;
-    });
-  }
-
-  if (!fuse) return [];
-  return fuse.search(q).map((hit) => hit.item);
+  return records.filter((r) => foldName(r.nameZh) === q || foldName(r.nameEn) === q);
 }
 
 function cropPrimaryName(crop: string): string {
@@ -53,18 +40,27 @@ function exclusionItems(crop: string): string[] {
     .filter(Boolean);
 }
 
-function cropExcludesQuery(crop: string, q: string): boolean {
-  return exclusionItems(crop).some((item) => item === q);
+function cropExcludesQuery(crop: string, q: string, groups: string[] = []): boolean {
+  return exclusionItems(crop).some((item) => item === q || groups.includes(item));
 }
 
 export function isCategoryQuery(q: string): boolean {
   return q.endsWith("類") || q.startsWith("香辛植物") || q === "草木本植物" || q === "未分類";
 }
 
+function canonicalCropName(q: string): string {
+  return CROP_ALIASES[q] ?? q;
+}
+
 export function parentGroupsFor(records: MrlRecord[], q: string): string[] {
-  const groups = new Set<string>(CROP_PARENT_GROUPS[q] ?? []);
+  const query = q.trim();
+  const canonical = canonicalCropName(query);
+  const groups = new Set<string>([
+    ...(CROP_PARENT_GROUPS[query] ?? []),
+    ...(CROP_PARENT_GROUPS[canonical] ?? []),
+  ]);
   for (const r of records) {
-    if (!cropExcludesQuery(r.crop, q)) continue;
+    if (!cropExcludesQuery(r.crop, query) && !cropExcludesQuery(r.crop, canonical)) continue;
     const group = cropPrimaryName(r.crop).replace(/^其他/, "");
     if (group.endsWith("類")) groups.add(group);
   }
@@ -72,7 +68,7 @@ export function parentGroupsFor(records: MrlRecord[], q: string): string[] {
 }
 
 function cropAppliesToQuery(crop: string, q: string, groups: string[]): boolean {
-  if (cropExcludesQuery(crop, q)) return false;
+  if (cropExcludesQuery(crop, q, groups)) return false;
   if (crop === q) return true;
 
   const primary = cropPrimaryName(crop);
@@ -87,8 +83,13 @@ function cropAppliesToQuery(crop: string, q: string, groups: string[]): boolean 
 function matchCrop(records: MrlRecord[], crop: string) {
   const q = crop.trim();
   if (!q) return records;
-  const groups = isCategoryQuery(q) ? [] : parentGroupsFor(records, q);
-  return records.filter((r) => cropAppliesToQuery(r.crop, q, groups));
+  const canonical = canonicalCropName(q);
+  const names = canonical === q ? [q] : [q, canonical];
+  if (names.some(isCategoryQuery)) {
+    return records.filter((r) => names.some((name) => cropAppliesToQuery(r.crop, name, [])));
+  }
+  const groups = [...new Set(names.flatMap((name) => parentGroupsFor(records, name)))];
+  return records.filter((r) => names.some((name) => cropAppliesToQuery(r.crop, name, groups)));
 }
 
 export function isSpecificCropName(name: string): boolean {

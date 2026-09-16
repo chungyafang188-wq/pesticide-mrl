@@ -1,7 +1,10 @@
 import Fuse from "fuse.js";
 
-function contains(hay, needle) {
-  return String(hay).toLowerCase().includes(String(needle).toLowerCase());
+function foldName(value) {
+  return String(value ?? "")
+    .trim()
+    .replace(/\s+/g, " ")
+    .toLowerCase();
 }
 
 export function createSearcher(records) {
@@ -17,12 +20,10 @@ export function createSearcher(records) {
   });
 }
 
-function matchPesticide(records, fuse, pesticide) {
-  const q = pesticide.trim();
+function matchPesticide(records, _fuse, pesticide) {
+  const q = foldName(pesticide);
   if (!q) return records;
-  const exact = records.filter((r) => contains(r.nameZh, q) || contains(r.nameEn, q));
-  if (exact.length) return exact;
-  return fuse.search(q).map((hit) => hit.item);
+  return records.filter((r) => foldName(r.nameZh) === q || foldName(r.nameEn) === q);
 }
 
 function cropPrimaryName(crop) {
@@ -40,41 +41,57 @@ function exclusionItems(crop) {
     .filter(Boolean);
 }
 
-function cropExcludesQuery(crop, q) {
-  return exclusionItems(crop).some((item) => item === q);
-}
-
 function isCategoryQuery(q) {
   return q.endsWith("類") || String(q).startsWith("香辛植物") || q === "草木本植物" || q === "未分類";
 }
 
 const PARENT = {
   結球萵苣: ["包葉菜類"],
-  結球白菜: ["包葉菜類"],
-  甘藍: ["包葉菜類"],
-  抱子甘藍: ["包葉菜類"],
-  花椰菜: ["包葉菜類"],
-  青花菜: ["包葉菜類"],
+  結球白菜: ["包葉菜類", "十字花科包葉菜類"],
+  大白菜: ["包葉菜類", "十字花科包葉菜類"],
+  包心白菜: ["包葉菜類", "十字花科包葉菜類"],
+  黃芽白: ["包葉菜類", "十字花科包葉菜類"],
+  甘藍: ["包葉菜類", "十字花科包葉菜類"],
+  抱子甘藍: ["包葉菜類", "十字花科包葉菜類"],
+  花椰菜: ["包葉菜類", "十字花科包葉菜類"],
+  青花菜: ["包葉菜類", "十字花科包葉菜類"],
   不結球萵苣: ["小葉菜類"],
   半結球萵苣: ["小葉菜類"],
   蘋果: ["梨果類"],
   梨: ["梨果類"],
 };
 
+const ALIAS = {
+  大白菜: "結球白菜",
+  包心白菜: "結球白菜",
+  黃芽白: "結球白菜",
+};
+
+function canonicalCropName(q) {
+  return ALIAS[q] ?? q;
+}
+
 function parentGroupsFor(records, q) {
-  const groups = new Set(PARENT[q] ?? []);
+  const query = q.trim();
+  const canonical = canonicalCropName(query);
+  const groups = new Set([...(PARENT[query] ?? []), ...(PARENT[canonical] ?? [])]);
   for (const r of records) {
-    if (!cropExcludesQuery(r.crop, q)) continue;
+    if (!cropExcludesQuery(r.crop, query) && !cropExcludesQuery(r.crop, canonical)) continue;
     const group = cropPrimaryName(r.crop).replace(/^其他/, "");
     if (group.endsWith("類")) groups.add(group);
   }
   return [...groups];
 }
 
+function cropExcludesQuery(crop, q, groups = []) {
+  return exclusionItems(crop).some((item) => item === q || groups.includes(item));
+}
+
 function cropAppliesToQuery(crop, q, groups) {
-  if (cropExcludesQuery(crop, q)) return false;
+  if (cropExcludesQuery(crop, q, groups)) return false;
   if (crop === q) return true;
   const primary = cropPrimaryName(crop);
+  if (primary === q) return true;
   if (isCategoryQuery(q)) {
     return primary === q || primary.includes(q);
   }
@@ -84,8 +101,13 @@ function cropAppliesToQuery(crop, q, groups) {
 function matchCrop(records, crop) {
   const q = crop.trim();
   if (!q) return records;
-  const groups = isCategoryQuery(q) ? [] : parentGroupsFor(records, q);
-  return records.filter((r) => cropAppliesToQuery(r.crop, q, groups));
+  const canonical = canonicalCropName(q);
+  const names = canonical === q ? [q] : [q, canonical];
+  if (names.some(isCategoryQuery)) {
+    return records.filter((r) => names.some((name) => cropAppliesToQuery(r.crop, name, [])));
+  }
+  const groups = [...new Set(names.flatMap((name) => parentGroupsFor(records, name)))];
+  return records.filter((r) => names.some((name) => cropAppliesToQuery(r.crop, name, groups)));
 }
 
 export function searchRecords(records, fuse, pesticide, crop, limit = 12) {

@@ -35,5 +35,5 @@ jobs:
             echo "No data change"
             exit 0
           fi
-          git commit -m "Update bundled MRL data from FDA open data."
+          git commit -m "Update bundled MRL data from FDA open data (ODT-corrected when order numbers match)."
           git push
