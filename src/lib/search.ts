@@ -74,7 +74,7 @@ function cropAppliesToQuery(crop: string, q: string, groups: string[]): boolean 
   const primary = cropPrimaryName(crop);
   if (primary === q) return true;
   if (isCategoryQuery(q)) {
-    return primary === q || primary.includes(q);
+    return primary === q || primary === `其他${q}`;
   }
 
   return groups.some((g) => primary === g || primary === `其他${g}`);
