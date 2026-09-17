@@ -21,14 +21,11 @@ export async function findOfficialOdtFiles(dir) {
   }
 }
 
-export async function extractOdtContentXml(odtPath) {
-  const tmp = await mkdtemp(join(tmpdir(), "mrl-odt-"));
+function unzipOdt(odtPath, tmp) {
   try {
+    execFileSync("unzip", ["-o", "-q", odtPath, "-d", tmp], { stdio: "pipe" });
+  } catch {
     execFileSync("tar", ["-xf", odtPath, "-C", tmp], { stdio: "pipe" });
-    return join(tmp, "content.xml");
-  } catch (err) {
-    await rm(tmp, { recursive: true, force: true });
-    throw err;
   }
 }
 
@@ -38,7 +35,7 @@ export async function loadLatestOfficialAnnex(officialDir) {
   const latest = files[0];
   const tmp = await mkdtemp(join(tmpdir(), "mrl-odt-"));
   try {
-    execFileSync("tar", ["-xf", latest.path, "-C", tmp], { stdio: "pipe" });
+    unzipOdt(latest.path, tmp);
     const xmlPath = join(tmp, "content.xml");
     const xmlHead = (await readFile(xmlPath, "utf8")).slice(0, 400000);
     const fromXml = extractOrderNo(xmlHead);
