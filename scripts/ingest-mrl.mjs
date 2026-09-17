@@ -187,7 +187,13 @@ async function main() {
   let usedOfficial = false;
   let officialOrderNo = "";
 
-  const official = await loadLatestOfficialAnnex(officialDir);
+  let official = null;
+  try {
+    official = await loadLatestOfficialAnnex(officialDir);
+  } catch (err) {
+    console.warn("無法讀取官方 ODT，僅使用開放資料");
+    console.warn(String(err));
+  }
   if (official) {
     officialOrderNo = official.orderNo;
     console.log(`官方 ODT：${official.file.name} 令號 ${officialOrderNo || "（無）"} 附表一 ${official.annex1.length} 筆`);
